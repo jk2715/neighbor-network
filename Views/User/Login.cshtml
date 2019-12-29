@@ -1,0 +1,175 @@
+﻿@{
+    ViewData["Login"] = "Login Page";
+}
+@using System.Data
+@using Neighbor_Network.Controllers
+@using Neighbor_Network.Models
+@model Neighbor_Network.Models.User
+
+<html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link href="~/css/Login.css" rel="stylesheet" />
+    <style>
+        .modal-padding {
+            padding-left: 30px;
+            padding-right: 30px;
+        }
+
+        h6 {
+            color: green;
+        }
+        label, h3, h2{
+            color:white;
+        }
+    </style>
+</head>
+<body class="img-fluid" style="background-image:url('https://p1cdn4static.civiclive.com/UserFiles/Servers/Server_4323159/Image/Government/Departments/CommDev/Neighborhoods_subdivision-2.jpg')">
+    @{
+        UserController uc = new UserController();
+        uc.ClearCache();
+        string[] stateArray = new string[] { "AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY" };
+        List<SelectListItem> stateList = new List<SelectListItem>();
+        for (int i = 0; i < stateArray.Length; i++)
+        {
+            stateList.Add(new SelectListItem { Text = stateArray[i], Value = stateArray[i] });
+        }
+    }
+    <div class="inner-wrapper">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-4 col-sm-offset-4">
+                    <h2 class="text-center">Welcome</h2>
+                    @using (Html.BeginForm("Login", "User", FormMethod.Post))
+                    {
+                        <div class="form-group">
+                            <label for="uname">Username</label>
+                            @Html.TextBoxFor(m => m.Uname, new { @placeholder = "username", @class = "form-control", @id = "uname" })
+                        </div>
+                        <div class="form-group">
+                            <label for="pass">Password</label>
+                            @Html.PasswordFor(m => m.Pass, new { @placeholder = "password", @class = "form-control", @id = "pass" })
+                        </div>
+                        <br />
+                        <br />
+                        <input type="submit" class="btn btn-default" style="background-color:dimgray" value="Login" />
+                        <br />
+                        <div id="alerta">
+
+                        </div>
+                        <div id="alerta2">
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div style="margin-left:400px">
+            <h3>New User?</h3>
+            <br />
+            <input type="button" value="Register Now" id="registerbtn" class="btn btn-default" style="background-color:Highlight" />
+        </div>
+    </div>
+    @using (Html.BeginForm("RegisterUser", "User", FormMethod.Post))
+    {
+        <div class="modal" tabindex="-1" role="dialog" id="myModal">
+            <div class="modal-dialog" role="document" id="modalD">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><b id="title">New Registration</b></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div id="alertaError">
+                    </div>
+                    <div class="modal-body modal-padding" id="modalBody">
+                        <div class="row">
+                            <div class="col-sm-auto">
+                                <h6>First Name</h6>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.Fname, new { @placeholder = "First Name", @id = "fname" })
+                                </div>
+                            </div>
+                            <div class="col-sm-auto">
+                                <h6>Last Name</h6>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.Lname, new { @placeholder = "Last Name", @id = "lname" })
+                                </div>
+                            </div>
+                        </div>
+                            <div class="col-half">
+                                <h6>Gender</h6>
+                                <div class="input-group">
+                                    @Html.DropDownListFor(m => m.Gender, new List<SelectListItem>
+                                                                                                                {new SelectListItem{Text = "Male", Value = "M"},
+                                                                                                                  new SelectListItem{Text = "Female", Value = "F"}},
+                                                   "--Select--", new { @id = "gender", @class = "dropSize" })
+                                </div>
+                            </div>
+                        <div class="row">
+                            <div class="col-sm-auto">
+                                <h6>Address</h6>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.Street, new { @placeholder = "Street #, Apt #", @id = "street" })
+                                </div>
+                            </div>
+                            <div class="col-sm-auto">
+                                <h6>City</h6>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.City, new { @placeholder = "City", @id = "city" })
+                                </div>
+                            </div>
+                            <div class="col-sm-auto">
+                                <h6>State</h6>
+                                <div class="input-group">
+                                    @Html.DropDownListFor(m => m.State, stateList, "--Select--", new { @id = "state", @class = "dropSize" })
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-auto">
+                                <h6>Phone Number</h6>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.Phone, new { @placeholder = "(555)555-5555", @id = "phone" })
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-auto">
+                                <h6>Username</h6>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.Uname, new { @id = "uname" })
+                                </div>
+                            </div>
+                            <div class="col-sm-auto">
+                                <h6>Password</h6>
+                                <div class="input-group">
+                                    @Html.PasswordFor(m => m.Pass, new { @id = "pass" })
+                                </div>
+                            </div>
+                        </div>
+                        <br />
+                        <input type="submit" value="Register" style="background-color:#7ed321; color:white;" />
+                        <input type="hidden" name="evalHidden" id="evalHidden" value="false" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function () {
+            $("#registerbtn").click(function () {
+                $("#myModal").modal("show")
+            });
+        });
+    </script>
+</body>
+
+
+</html>
+
