@@ -1,0 +1,156 @@
+﻿
+@{
+    Layout = null;
+}
+@using System.Data
+@using Neighbor_Network.Controllers
+@using Neighbor_Network.Models
+@model Neighbor_Network.Models.Message
+<!DOCTYPE html>
+
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+    <link rel='stylesheet prefetch' href='http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css'>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+    <link rel="stylesheet" href="~/css/formstyle.css" />
+    <style>
+        .modal-padding {
+            padding-left: 30px;
+            padding-right: 30px;
+        }
+
+        h6 {
+            color: green;
+        }
+        body{
+            background-image:url('https://images.squarespace-cdn.com/content/v1/569dd2d905f8e2b24db1a7db/1454972075329-I9ZNCCNBDZESB28T6VD8/ke17ZwdGBToddI8pDm48kHaFbdrpL7-jtjefzxCRHwl7gQa3H78H3Y0txjaiv_0fDoOvxcdMmMKkDsyUqMSsMWxHk725yiiHCCLfrh8O1z5QPOohDIaIeljMHgDF5CVlOqpeNLcJ80NK65_fV7S1UXqag-p_VxubjDWb_kDkhGYaLWTlYJXH1fYEb5mIr-rNK19DM50qGfsFZg32uC5Iyw/Hermosa2.jpg?format=1500w');
+            background-repeat:no-repeat;
+            background-attachment:fixed;
+        }
+    </style>
+    <meta name="viewport" content="width=device-width" />
+    <title>Threads</title>
+</head>
+<body>
+    <input type="button" class="btn btn-primary" onclick="home()" style="top:0;right:200px;width:10%" value="Home" id="hmBtn" />
+    <input type="button" onclick="sign_Out()" class="btn btn-danger" style="top:0;right:100px;width:10%" value="Log out" id="logBtn" />
+    @{
+        MessageController mc = new MessageController();
+        UserController uc = new UserController();
+        DataTable messages = mc.GetMessages(Convert.ToInt32(ViewBag.Id));
+        var title = ViewBag.Title;
+        var time = ViewBag.Time;
+        var ibody = ViewBag.Msg;
+        var imsg = ViewBag.MsgId;
+    }
+    <div id="wrapper">
+        <div class="inner-wrapper">
+            <div class="container">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@ViewBag.Title</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Posted by @ViewBag.Poster on @ViewBag.Time</h6>
+                        <h6 class="card-subtitle mb-2 text-muted">Location: @ViewBag.Location</h6>
+                        <p class="card-text">@ViewBag.Msg</p>
+                        <a href="#" onclick="reply(@ViewBag.MsgId)" class="card-link">Reply</a>
+                    </div>
+                </div>
+                @try
+                {
+                    @foreach (DataRow row in messages.Rows)
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Posted by @row["Poster"].ToString() on @row["mtimestamp"].ToString()</h6>
+                                @if (row["replyid"].ToString() != ViewBag.MsgId)
+                                {
+                                    foreach (DataRow row2 in messages.Rows)
+                                    {
+                                        if (row2["msgid"].ToString() == row["replyid"].ToString())
+                                        {
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    Quote
+                                                </div>
+                                                <div class="card-body">
+                                                    <blockquote class="blockquote mb-0">
+                                                        <p>@row2["mbody"].ToString()</p>
+                                                        <footer class="blockquote-footer">@row2["Poster"].ToString()</footer>
+                                                    </blockquote>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                }
+                                <p class="card-text">@row["mbody"].ToString()</p>
+                                <a href="#" onclick="reply(@row["msgid"])" class="card-link">Reply</a>
+                            </div>
+                        </div>
+                    }
+                }
+                catch
+                {
+
+                }
+
+            </div>
+        </div>
+    </div>
+    @using (Html.BeginForm("Reply", "Message", FormMethod.Post))
+    {
+        <div class="modal" tabindex="-1" role="dialog" id="myModal">
+            <div class="modal-dialog" role="document" id="modalD">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><b id="title">New Message</b></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div id="alertaError">
+                    </div>
+                    <div class="modal-body modal-padding" id="modalBody">
+                        <div class="row">
+                            <h6>Message</h6>
+                            <div class="input-group">
+                                @Html.TextAreaFor(m => m.Body, new { @class = "form-control" })
+                            </div>
+                        </div>
+                        <br />
+                        <input type="submit" value="Post" style="background-color:#7ed321; color:white;" class="btn-sm" />
+                        <input type="hidden" name="author" id="author" value="@uc.CheckSession().ToString()" />
+                        <input type="hidden" name="tid" id="tid" value="@ViewBag.Id" />
+                        <input type="hidden" name="replyid" id="replyid" value="0" />
+                        <input type="hidden" name="title" id="title" value="@title" />
+                        <input type="hidden" name="msg" id="msg" value="@ibody" />
+                        <input type="hidden" name="time" id="time" value="@time" />
+                        <input type="hidden" name="imsgid" id="imsgid" value="@imsg" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script>
+        function reply(id) {
+            document.getElementById("replyid").value = id;
+            $("#myModal").modal("show");
+        }
+        window.onload = function () {
+            var id = @uc.CheckSession();
+            if (id < 0) {
+                window.location.href = "@Url.Action("Index", "User")";
+            }
+        }
+        function home() {
+            window.location.href = "@Url.Action("HomePage", "User")";
+        }
+        function sign_Out() {
+            window.location.href = "@Url.Action("Logout","User")";
+        }
+    </script>
+</body>
+</html>

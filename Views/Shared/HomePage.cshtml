@@ -1,0 +1,554 @@
+﻿
+@{
+    Layout = null;
+}
+@using System.Data
+@using Neighbor_Network.Controllers
+@using Neighbor_Network.Models
+@model Neighbor_Network.Models.Parent
+<!DOCTYPE html>
+@{ 
+    UserController uc = new UserController();
+    int uid = uc.CheckSession();
+
+}
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+    <link rel='stylesheet prefetch' href='http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css'>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+    <link rel="stylesheet" href="~/css/formstyle.css" />
+    <style>
+        .modal-padding {
+            padding-left: 30px;
+            padding-right: 30px;
+        }
+
+        h6 {
+            color: green;
+        }
+    </style>
+    <meta name="viewport" content="width=device-width" />
+    <title>HomePage</title>
+</head>
+<body style="background-image:url('https://images.squarespace-cdn.com/content/v1/569dd2d905f8e2b24db1a7db/1454972075329-I9ZNCCNBDZESB28T6VD8/ke17ZwdGBToddI8pDm48kHaFbdrpL7-jtjefzxCRHwl7gQa3H78H3Y0txjaiv_0fDoOvxcdMmMKkDsyUqMSsMWxHk725yiiHCCLfrh8O1z5QPOohDIaIeljMHgDF5CVlOqpeNLcJ80NK65_fV7S1UXqag-p_VxubjDWb_kDkhGYaLWTlYJXH1fYEb5mIr-rNK19DM50qGfsFZg32uC5Iyw/Hermosa2.jpg?format=1500w')">
+    @{ 
+        if (ViewBag.ID != null)
+            ViewBag.ID2 = 0;
+        else if(ViewBag.ID == null && ViewBag.ID2 == null)
+        {
+            ViewBag.ID = 0;
+            ViewBag.ID2 = 0;
+        }
+        else
+        {
+            ViewBag.ID = 0;
+        }
+
+
+    }
+    <input type="button" class="btn btn-primary" onclick="home()" style="top:0;right:200px;width:10%" value="Home" id="hmBtn" />
+    <input type="button" onclick="sign_Out()" class="btn btn-danger" style="top:0;right:100px;width:10%" value="Log out" id="logBtn" />
+    @using (Html.BeginForm("ShowResults", "User", FormMethod.Get))
+    {
+        <input type="text" name="searchBox" id="searchBox" class="form-control" style="width:20%;top:0;right:20px" placeholder="enter a keyword" />
+        <input type="submit" value="Go" onclick="search()" class="btn" style="width:20%;top:0;right:10px" />
+        }
+    @using (Html.BeginForm("LeaveBlock", "Block", FormMethod.Post))
+    {
+        <input type="submit" class="btn btn-danger" style="top:0;right:300px;width:10%" value="Leave Block" />
+        <input type="hidden" name="xid" id="xid" value="@uid"/>
+    }
+    <div class="inner-wrapper">
+        <div class="container">
+            @{
+                string[] profile = uc.GetProfile(uid);
+                if (profile[0] != null)
+                {
+                    <div style="text-align:center">
+                        <h5>Your Profile</h5>
+                    </div>
+                    <img src="@profile[1]" class="img-fluid img-thumbnail" style="width:200px;height:200px;display:block;margin-left:auto;margin-right:auto" />
+                    <p class="lead">@profile[0]</p>
+                }
+                else
+                {
+                    <div class="row">
+                        <h5>Create Your Profile</h5>
+                        Add a personal bio and upload a profile picture so that others can know more about you!
+                        @using (Html.BeginForm("CreateProfile", "User", FormMethod.Post))
+                        {
+                            <label>Bio</label>
+                            <br />
+                            <div class="input-group">
+                                @Html.TextAreaFor(m => m.Profile.Bio, new { @id = "bio", @class = "form-control" })
+                            </div>
+                            <label>Paste a link to an image for your profile picture</label>
+                            <div class="row">
+                                <div class="col-half">
+                                    <div class="form-group">
+                                        @Html.TextBoxFor(m => m.Profile.Pic, new { @class = "form-control", @id = "pic" })
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="submit" value="Create" class="btn btn-primary btn-group-sm" id="psubmit" />
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+    <div class="inner-wrapper">
+        <div class="container">
+            @using (Html.BeginForm("JoinBlock", "Block", FormMethod.Post))
+            {
+                BlockController bc = new BlockController();
+                MessageController mc = new MessageController();
+                DataTable blocks = bc.FetchBlocks(uid);
+                DataTable threads = mc.GetThreads(uid);
+                int approvals = bc.CheckApplication(uid);
+                bool eval = bc.MemberCheck(uid);
+                if (eval == false && approvals < 0)
+                {
+                    if (blocks != null && blocks.Rows.Count > 0)
+                    {
+                        string ncity = blocks.Rows[0].Field<string>(4);
+                        string nstate = blocks.Rows[0].Field<string>(5);
+                        int k = 0;
+                        <h5>Join a block today!</h5>
+                        <br />
+                        <div>Search for a community in your area.</div>
+                        <input type="button" value="Search" class="btn btn-sm btn-primary" id="search" />
+                        <div class="modal" tabindex="-1" role="dialog" id="myModal">
+                            <div class="modal-dialog modal-lg" role="document" id="modalD">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title"><b id="titulo">Showing neighborhoods located in @ncity, @nstate</b></h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body modal-padding" id="modalBody">
+                                        <table border="1" class="table">
+                                            <thead class="thead-dark">
+                                                <tr>
+                                                    <th scope="col">
+                                                        Neighborhood
+                                                    </th>
+                                                    <th scope="col">
+                                                        Street Intersection (NE)
+                                                    </th>
+                                                    <th scope="col">
+                                                        Street Intersection (SW)
+                                                    </th>
+                                                    <th scope="col">
+                                                        Total Members
+                                                    </th>
+                                                    <th scope="col">
+                                                        Action
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="table2" style="color:black;">
+                                                @foreach (DataRow a in blocks.Rows)
+                                                {
+                                                    <tr>
+                                                        <td>@a["nname"].ToString()</td>
+                                                        <td>@a["ncorner"].ToString()</td>
+                                                        <td>@a["scorner"].ToString()</td>
+                                                        <td>@BlockController.mCount[k]</td>
+                                                        <td><input type="submit" value="Join" class="btn btn-success" onclick="assign_BlockId(@a["blid"].ToString())" /></td>
+                                                    </tr>
+                                                    k++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" value="0" name="blockId" id="blockId" />
+                        <input type="hidden" value="@uid" name="userId" id="userId" />
+                    }
+                    else
+                    {
+                        <div class="row">
+                            <h5>We currently have no blocks registered in your area.</h5>
+                        </div>
+                    }
+                }
+                else if (eval == false && approvals < 3)
+                {
+                    <div class="row">
+                        <h5>Your application is currently pending approval</h5>
+                        Current number of approvals: @approvals
+                    </div>
+                }
+                else
+                {
+                    List<string> x = new List<string>();
+                    <div id="wrapper">
+                        <div class="main">
+                            <div class="inner">
+                                <div class="row" style="margin-left:10px">
+                                    <div class="col-half">
+                                        <h5>Threads</h5>
+                                    </div>
+                                    <div class="col-half">
+                                        <input type="button" style="width:50%; margin-left:100px" class="btn btn-sm btn-primary" id="ntBtn" value="New Thread" />
+                                    </div>
+                                </div>
+                                @foreach (DataRow row in threads.Rows)
+                                {
+                                    if (!x.Contains(row["tid"].ToString()))
+                                    {
+                                        <div style="border:ridge">
+                                            <div class="row" style="margin-left:10px">
+                                                <a asp-controller="Message" asp-action="OpenThread" asp-route-id="@row["tid"].ToString()" asp-route-title="@row["mtitle"].ToString()" asp-route-time="@row["mtimestamp"].ToString()" asp-route-msg="@row["mbody"].ToString()" asp-route-msgid="@row["imsg"].ToString()" asp-route-poster="@row["Poster"].ToString()" asp-route-location="@row["mcoordinates"].ToString()"><b>@row["mtitle"].ToString()</b></a>
+                                            </div>
+                                            <div class="row" style="margin-left:10px">
+                                                Posted by @row["Poster"].ToString() on @row["mtimestamp"].ToString()
+                                            </div>
+                                        </div>
+                                        x.Add(row["tid"].ToString());
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                }
+            }
+        </div>
+    </div>
+
+    @using (Html.BeginForm("PostThread", "Message", FormMethod.Post))
+    {
+        DataTable dtPeople = uc.GetPeople(uid);
+        <div class="modal" tabindex="-1" role="dialog" id="myModal2">
+            <div class="modal-dialog" role="document" id="modalD">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><b id="title">New Thread</b></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div id="alertaError">
+                    </div>
+                    <div class="modal-body modal-padding" id="modalBody">
+                        <div class="row">
+                            <div class="col-half">
+                                <h6>Title</h6>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.Message.Title, new { @id = "title" })
+                                </div>
+                            </div>
+                            <div class="col-half">
+                                <h6>Location</h6>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.Message.Coordinates, new { @id = "location" })
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-half">
+                                <h6>To</h6><div class="input-group"><input type="button" value="Select" id="selectBtn" style="width:50%" class="btn btn-primary btn-sm" /></div>
+                            </div>
+                            <div class="col-half">
+                                <h6>Post to whole block</h6><input type="checkbox" id="bCheck" />
+                            </div>
+                        </div>
+                        <div class="row">
+                                <h6>Message</h6>
+                                <div class="input-group">
+                                    @Html.TextAreaFor(m => m.Message.Body, new { @id = "bodyp", @class="form-control" })
+                                </div>
+                        </div>
+                        <br />
+                        <input type="submit" onclick="checkBlock()" value="Post" style="background-color:#7ed321; color:white;" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal" tabindex="-1" role="dialog" id="myModal3">
+            <div class="modal-dialog modal-lg" role="document" id="modalD">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><b id="titulo">Send to:</b></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body modal-padding" id="modalBody">
+                        <table border="1" class="table">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th scope="col">
+                                        Name
+                                    </th>
+                                    <th scope="col">
+                                        Username
+                                    </th>
+                                    <th scope="col">
+                                        Action
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="table2" style="color:black;">
+                                @foreach (DataRow a in dtPeople.Rows)
+                                {
+                                    <tr>
+                                        <td>@a["fname"].ToString()  @a["lname"].ToString()</td>
+                                        <td>@a["uname"].ToString()</td>
+                                        <td><input type="checkbox" name="chk" id="@a["uid"].ToString()" /></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        <input type="button" value="Done" onclick="get_ID()" class="btn btn-success btn-sm" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" id="arr" name="arr" />
+        <input type="hidden" value="@uid" name="id" id="id" />
+        <input type="hidden" value="false" id="checkH" name="checkH" />
+    }
+
+    <div class="inner-wrapper">
+        <div class="container">
+            @using (Html.BeginForm("Approve", "User", FormMethod.Post))
+            {
+                BlockController bc = new BlockController();
+                bool eval = bc.MemberCheck(uid);
+                if (eval)
+                {
+                    DataTable applicationDT = uc.GetApplcations(uid);
+                    <div id="wrapper">
+                        <div class="main">
+                            <div class="inner">
+                                <div class="row" style="margin-left:10px">
+                                    <div class="col-half">
+                                        <h5>Applications</h5>
+                                    </div>
+                                </div>
+                                @foreach (DataRow row in applicationDT.Rows)
+                                {
+                                    <div style="border:ridge">
+                                        <div class="row" style="margin-left:10px">
+                                            <div class="col-half" style="height:50%;margin-top:10px">
+                                                <b>@row["fname"].ToString() @row["lname"].ToString()</b>
+                                            </div>
+                                            <div class="col-half" style="height:30%;width:40%">
+                                                <input type="submit" style="width:50%;margin-left:107px;height:80%;margin-top:5px" onclick="set_Approval(@row["uid"].ToString(), '@row["applicationdate"].ToString()')" class="btn btn-sm btn-primary" value="Approve" />
+                                            </div>
+                                        </div>
+                                        <div class="row" style="margin-left:10px">
+                                            <div class="col-half" style="width:60%">
+                                                Applied on @row["applicationdate"].ToString()
+                                            </div>
+                                            <div class="col-half" style="height:30%;width:40%">
+                                                <a asp-action="GetID2" asp-controller="User" asp-route-id="@Convert.ToInt32(row["pid"])">View Info</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    if (Convert.ToInt32(row["pid"]) == ViewBag.ID2)
+                                    {
+                                        <div class="modal" tabindex="-1" role="dialog" id="myModal4">
+                                            <div class="modal-dialog" role="document" id="modalD">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title"><b id="titulo">About @row["fname"].ToString()</b></h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body modal-padding" id="modalBody">
+                                                        <div style="text-align:center">
+                                                            <h5></h5>
+                                                        </div>
+                                                        <img src="@row["photo"].ToString()" class="img-fluid img-thumbnail" style="width:200px;height:200px;display:block;margin-left:auto;margin-right:auto" />
+                                                        <p class="lead">@row["bio"].ToString()</p>
+                                                        <div class="row">
+                                                            <div class="col-half"><label>Gender</label></div>
+                                                            <div class="col-half"><label>Address</label></div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-half">@row["gender"].ToString()</div>
+                                                            <div class="col-half">@row["street"].ToString(), @row["city"].ToString(), @row["state"].ToString()</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                }
+
+                                <input type="hidden" id="app" name="app" value="0" />
+                                <input type="hidden" id="id1" name="id1" value="@uid" />
+                                <input type="hidden" id="adate" name="adate" value="" />
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            }
+        </div>
+    </div>
+    <div class="inner-wrapper">
+        <div class="container">
+            @using (Html.BeginForm("Accept", "User", FormMethod.Post))
+            {
+                BlockController bc = new BlockController();
+                bool eval = bc.MemberCheck(uid);
+                if (eval)
+                {
+                    DataTable requestDT = uc.GetRequests(uid);
+                    <div id="wrapper">
+                        <div class="main">
+                            <div class="inner">
+                                <div class="row" style="margin-left:10px">
+                                    <div class="col-half">
+                                        <h5>Friend Requests</h5>
+                                    </div>
+                                </div>
+                                @foreach (DataRow row in requestDT.Rows)
+                                {
+                                    <div style="border:ridge">
+                                        <div class="row" style="margin-left:10px">
+                                            <div class="col-half" style="height:50%;margin-top:10px">
+                                                <b>@row["fname"].ToString() @row["lname"].ToString()</b>
+                                            </div>
+                                            <div class="col-half" style="height:30%;width:40%">
+                                                <input type="submit" style="width:50%;margin-left:107px;height:80%;margin-top:5px" onclick="accept_request('@row["mid2"].ToString()')" class="btn btn-sm btn-primary" value="Accept" />
+                                            </div>
+                                        </div>
+                                        <div class="row" style="margin-left:10px">
+                                            <div class="col-half" style="width:60%">
+                                                Member since @row["registerdate"].ToString()
+                                            </div>
+                                            <div class="col-half" style="height:30%;width:40%">
+                                                <a asp-action="GetID" asp-controller="User" asp-route-id="@Convert.ToInt32(row["pid"])">View Info</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    if (Convert.ToInt32(row["pid"]) == ViewBag.ID)
+                                    {
+                                        <div class="modal" tabindex="-1" role="dialog" id="myModal5">
+                                            <div class="modal-dialog" role="document" id="modalD">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title"><b id="titulo">About @row["fname"].ToString()</b></h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body modal-padding" id="modalBody">
+                                                        <div style="text-align:center">
+                                                            <h5></h5>
+                                                        </div>
+                                                        <img src="@row["photo"].ToString()" class="img-fluid img-thumbnail" style="width:200px;height:200px;display:block;margin-left:auto;margin-right:auto" />
+                                                        <p class="lead">@row["bio"].ToString()</p>
+                                                        <div class="row">
+                                                            <div class="col-half"><label>Gender</label></div>
+                                                            <div class="col-half"><label>Address</label></div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-half">@row["gender"].ToString()</div>
+                                                            <div class="col-half">@row["street"].ToString(), @row["city"].ToString(), @row["state"].ToString()</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                }
+                                <input type="hidden" id="friend" name="friend" value="" />
+                                <input type="hidden" id="myID" name="myID" value="@uid" />
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            }
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script>
+        window.onload = function () {
+            var id = @uid
+            var x = @ViewBag.ID
+            var y = @ViewBag.ID2;
+            if (x > 0) {
+                $("#myModal5").modal("show")
+            }
+            if (y > 0) {
+                $("#myModal4").modal("show")
+            }
+            if (id < 1) {
+                window.location.href = "@Url.Action("Index", "User")"
+            }
+            
+        }
+        function home() {
+            window.location.href = "@Url.Action("HomePage", "User")"
+        }
+        function sign_Out() {
+            window.location.href = "@Url.Action("Logout","User")"
+        }
+        function assign_BlockId(x) {
+            document.getElementById("blockId").value = x;
+        }
+        function accept_request(id) {
+            document.getElementById("friend").value = id;
+        }
+        $(document).ready(function () {
+            $("#search").click(function () {
+                $("#myModal").modal("show")
+            });
+        });
+        $(document).ready(function () {
+            $("#selectBtn").click(function () {
+                $("#myModal3").modal("show")
+            });
+        });
+        $(document).ready(function () {
+            $("#ntBtn").click(function () {
+                $("#myModal2").modal("show")
+            });
+        });
+        $(document).ready(function () {
+            $("#infoBtn").click(function () {
+                $("#myModal4").modal("show")
+            });
+        });
+        function get_ID() {
+            var checkbx = document.getElementsByName("chk");
+            var checked = [];
+            for (var i = 0; i < checkbx.length; i++) {
+                if (checkbx[i].checked) {
+                    checked.push(checkbx[i].id);
+                }
+            }
+            document.getElementById("arr").value = checked;
+            $("#myModal3").modal("hide");
+        }
+        function set_Approval(id1, date) {
+            document.getElementById("app").value = id1;
+            document.getElementById("adate").value = date;
+        }
+        function checkBlock() {
+            var x = document.getElementById("bCheck").checked;
+            if (x == true) {
+                document.getElementById("checkH").value = "true";
+            }
+        }
+    </script>
+</body>
+</html>
